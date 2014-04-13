@@ -17,7 +17,7 @@ function sendEnd(){
 }
 
 function sendWord (idx) {
-  if (idx < words.length) {
+  if (idx < words.length && idx < 10) {
     console.log("words[pos]: " + words[idx]);
     Pebble.sendAppMessage({0: words[idx]},
                            function () {
@@ -29,8 +29,9 @@ function sendWord (idx) {
                            }
       );
 
+  } else{
+      sendEnd();
   }
-  sendEnd();
 }
 
 Pebble.addEventListener("appmessage",

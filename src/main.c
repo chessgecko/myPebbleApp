@@ -37,14 +37,12 @@ int push_x = 0;
 bool pause = true;
 bool started = false;
 bool fast_rewind  = false;
-
 ///////////////
 //int myCounter = 0;
-bool ready = false;
+//bool ready = true;
 enum {
     MESSAGE_KEY = 0,
-    URLString = 1,
-    EndString = 2
+    URLString = 1
     
 };
 
@@ -73,14 +71,17 @@ static void in_received_handler(DictionaryIterator *received, void *context) {
       APP_LOG(APP_LOG_LEVEL_DEBUG, "in receive handler, value: %s", "3");
     
     }
-    if(tuple->key == 0 && tuple != NULL && tuple->value != NULL && tuple->value->cstring !=NULL){
+    if(tuple->key == 0){
       APP_LOG(APP_LOG_LEVEL_DEBUG, "Received Message: %s", tuple->value->cstring);
-        strcat(*body_text, " ");
+        strcpy(*body_text, *body_text);
         strcat(*body_text, tuple->value->cstring);
+        strcat(*body_text, " a");
+
     }
-    if(tuple->key == 2){
-      ready = true;
-    }
+    //if(tuple->key == 2){
+      //APP_LOG(APP_LOG_LEVEL_DEBUG, "Received Message: %s", "end");
+      //ready = true;
+    //}
   }
   
     
@@ -157,7 +158,7 @@ static void getNextWord(char *string[200], char* word[30]){
   }
   APP_LOG(APP_LOG_LEVEL_DEBUG,*word);
   head_char = space_dex;
-  //word = next_word;
+  //word = next_word;  
 }
 
 
@@ -280,14 +281,12 @@ void redraw_text(int type){
 
 
 static void timer_callback(void *data) {
-  if(!ready){
   if(!pause){
   redraw_text(0);
   }else{
     if(fast_rewind){
       redraw_text(1);
     }
-  }
   }
   //animation actionEvent
   timer = app_timer_register(ACCEL_STEP_MS, timer_callback, NULL);
@@ -451,10 +450,6 @@ void config_provider(void *context) {
 }
 
 static void init() {
-   
-  *body_text = " hello world";//" In 1928, Walter E. Diemer, an accountant for the Fleer Chewing Gum Company in Philadelphia, was experimenting with new gum recipes. One recipe was found to be less sticky than regular chewing gum, and stretched more easily. This gum became highly successful and was eventually named by the president of Fleer as Dubble Bubble because of its stretchy texture. The original bubble gum was pink because that was the only dye Diemer had on hand at the time and it was his favorite color. In modern chewing gum, if natural rubber such as chicle is used, it must pass several purity and cleanliness tests. However, most modern types of chewing gum use synthetic gum based materials. These materials allow for longer-lasting flavour, a better texture, and a reduction in tackiness.[1]";
-
-  
   window = window_create();
   window_set_fullscreen(window, true);
   window_stack_push(window, true /* Animated */);
@@ -473,13 +468,9 @@ static void init() {
   disp_font = fonts_get_system_font(fonts[0]);
   text_layer_set_font(display_text, disp_font);
   
+  change_to_menu();
   
-  app_message_register_inbox_received(in_received_handler); 
-  app_message_register_inbox_dropped(in_dropped_handler);
-  app_message_register_outbox_sent(out_sent_handler);
-  app_message_register_outbox_failed(out_failed_handler);
-  app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
-  
+
   text_layer_set_text_alignment(display_text, GTextAlignmentCenter);
   text_layer_set_text_alignment(connection_text, GTextAlignmentCenter);
   
@@ -487,8 +478,12 @@ static void init() {
   layer_add_child(window_layer, text_layer_get_layer(connection_text));
   layer_add_child(window_layer, bitmap_layer_get_layer(image_layer));
   
-  change_to_menu();
-
+  *body_text = "  color. In modern chewing gum, [1]";
+   app_message_register_inbox_received(in_received_handler); 
+  app_message_register_inbox_dropped(in_dropped_handler);
+  app_message_register_outbox_sent(out_sent_handler);
+  app_message_register_outbox_failed(out_failed_handler);
+  app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
 }
 
 static void deinit() {
@@ -504,7 +499,8 @@ static void deinit() {
 
 int main(void) {
   init();
-  
   app_event_loop();
   deinit();
 }
+
+
