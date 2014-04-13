@@ -1,8 +1,6 @@
 // Function to send a message to the Pebble using AppMessage API
 //var travel;
 var words;
-var pos;
-var posReach;
 
 /*
 function sendMessage(msg) {
@@ -13,10 +11,14 @@ function sendMessage(msg) {
 //  console.log(url);
 //  Pebble.sendAppMessage({"1": url});
 //}
-var sendWord = function (idx) {
-  if (idx < words.length && pos < posReach) {
-    pos++;
-    console.log("words[idx]: " + words[idx]);
+
+function sendEnd(){
+  Pebble.sendAppMessage({2:"s"});
+}
+
+function sendWord (idx) {
+  if (idx < words.length) {
+    console.log("words[pos]: " + words[idx]);
     Pebble.sendAppMessage({0: words[idx]},
                            function () {
                              sendWord(idx + 1);
@@ -26,9 +28,10 @@ var sendWord = function (idx) {
                              sendWord(idx);
                            }
       );
-  
+
   }
-};
+  sendEnd();
+}
 
 Pebble.addEventListener("appmessage",
   function(e) {
@@ -39,14 +42,14 @@ Pebble.addEventListener("appmessage",
       console.log(url);
       getText(url);
     }
-    
+    /*
     console.log("here1");
     if(e.payload.moreLetters){
-      posReach = pos+10;
+      posReach = pos+5;
       console.log("here2");
       sendWord(pos);
     }
-    
+    */
     
     
   }
@@ -99,12 +102,11 @@ function getText(address){
           //doSomething(temp, i+1, max);
           //setTimeout(function(){}, 20000000);
         }
-        console.log("temp[i]: " + temp[i]);
+        //console.log("temp[i]: " + temp[i]);
       //tempArticle=tempArticle+ " " + temp[i];
       }
-      words = temp;
-      posReach = pos+10;          
-      sendWord(pos);
+      words = temp;         
+      sendWord(0);
       
       //doSomething(temp, travel, travel+30);
       //travel+=30;
@@ -133,7 +135,6 @@ function getText(address){
 // Called when JS is ready
 Pebble.addEventListener("ready",
   function(e) {
-    pos = 0;
     //sendURL("http://www.gizoogle.net");
     //getLocation(); 
     //getText("http://www.gizoogle.net");

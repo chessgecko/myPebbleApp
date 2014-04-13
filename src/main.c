@@ -39,11 +39,12 @@ bool started = false;
 bool fast_rewind  = false;
 
 ///////////////
-int myCounter = 0;
-
+//int myCounter = 0;
+bool ready = false;
 enum {
     MESSAGE_KEY = 0,
-    URLString = 1
+    URLString = 1,
+    EndString = 2
     
 };
 
@@ -72,10 +73,13 @@ static void in_received_handler(DictionaryIterator *received, void *context) {
       APP_LOG(APP_LOG_LEVEL_DEBUG, "in receive handler, value: %s", "3");
     
     }
-    if(tuple->key == 0){
+    if(tuple->key == 0 && tuple != NULL && tuple->value != NULL && tuple->value->cstring !=NULL){
       APP_LOG(APP_LOG_LEVEL_DEBUG, "Received Message: %s", tuple->value->cstring);
         strcat(*body_text, " ");
         strcat(*body_text, tuple->value->cstring);
+    }
+    if(tuple->key == 2){
+      ready = true;
     }
   }
   
@@ -154,25 +158,6 @@ static void getNextWord(char *string[200], char* word[30]){
   APP_LOG(APP_LOG_LEVEL_DEBUG,*word);
   head_char = space_dex;
   //word = next_word;
-  myCounter++;
-  if(myCounter >= 5){
-    myCounter = 0;
-    
-    DictionaryIterator *iter;
-    app_message_outbox_begin(&iter);
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "in receive handler, value: %s", "1");
-
-      //Tuplet value = TupletCString(1, tuple->value->cstring);
-    
-    dict_write_int16(iter, 2, 1);
-      
-      //dict_write_tuplet(iter, &value);
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "in receive handler, value: %s", "2");
-
-    app_message_outbox_send();
-  }
-  
-
 }
 
 
@@ -295,12 +280,14 @@ void redraw_text(int type){
 
 
 static void timer_callback(void *data) {
+  if(!ready){
   if(!pause){
   redraw_text(0);
   }else{
     if(fast_rewind){
       redraw_text(1);
     }
+  }
   }
   //animation actionEvent
   timer = app_timer_register(ACCEL_STEP_MS, timer_callback, NULL);
@@ -486,7 +473,6 @@ static void init() {
   disp_font = fonts_get_system_font(fonts[0]);
   text_layer_set_font(display_text, disp_font);
   
-  change_to_menu();
   
   app_message_register_inbox_received(in_received_handler); 
   app_message_register_inbox_dropped(in_dropped_handler);
@@ -501,7 +487,8 @@ static void init() {
   layer_add_child(window_layer, text_layer_get_layer(connection_text));
   layer_add_child(window_layer, bitmap_layer_get_layer(image_layer));
   
-   
+  change_to_menu();
+
 }
 
 static void deinit() {
@@ -517,6 +504,7 @@ static void deinit() {
 
 int main(void) {
   init();
+  
   app_event_loop();
   deinit();
 }
