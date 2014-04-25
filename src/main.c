@@ -8,6 +8,7 @@
 static Window *window;
 static TextLayer *display_text;
 static TextLayer *connection_text;
+static BitmapLayer *rewind_layer;
 Layer *window_layer;
 bool menu = true;
 static AppTimer *timer;
@@ -16,6 +17,10 @@ static BitmapLayer *image_layer;
 GBitmap *image;
 GBitmap *font_banner; 
 GBitmap *game_bg;
+GBitmap *rewind_icon;
+GBitmap *pause_icon;
+GBitmap *nothing_icon;
+
 
 enum {MENU,BOOK,SETTINGS} frame;
 const char* fonts[4] = {FONT_KEY_GOTHIC_28, FONT_KEY_GOTHIC_28_BOLD, FONT_KEY_ROBOTO_CONDENSED_21 };
@@ -27,7 +32,8 @@ int hold = 5;
 int speed = 40;
 
 
-static char* body_text[200]; 
+static char* body_text;
+static char* david_body_text = " ";
 int max_length = 12;
 int head_char=0;
 int space_pos = 0;
@@ -37,45 +43,65 @@ int push_x = 0;
 bool pause = true;
 bool started = false;
 bool fast_rewind  = false;
+
+char* con_text;
+int con_timer = 0;
+
 ///////////////
 //int myCounter = 0;
 //bool ready = true;
 enum {
-    MESSAGE_KEY = 0,
-    URLString = 1
+    MESSAGE_KEY = 1,
+    URLString = 2
     
 };
 
+
+
 // Called when a message is received from PebbleKitJS
+/*
+  in init
+
+*/
 static void in_received_handler(DictionaryIterator *received, void *context) {
-    
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "in receive handler, tuple->value->cstring: ");
+
     Tuple *tuple;
     tuple = dict_read_first(received);
   
   if(tuple){
     if(tuple->key == 1){
-      APP_LOG(APP_LOG_LEVEL_DEBUG, "in receive handler, tuple->value->cstring: %s", tuple->value->cstring);
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "in receive handler, with url, tuple->value->cstring: %s", tuple->value->cstring);
 
       DictionaryIterator *iter;
       app_message_outbox_begin(&iter);
-      APP_LOG(APP_LOG_LEVEL_DEBUG, "in receive handler, value: %s", "1");
+      //APP_LOG(APP_LOG_LEVEL_DEBUG, "in receive handler, value: %s", "1");
 
       //Tuplet value = TupletCString(1, tuple->value->cstring);
     
       dict_write_cstring(iter, 1, tuple->value->cstring);
       
       //dict_write_tuplet(iter, &value);
-      APP_LOG(APP_LOG_LEVEL_DEBUG, "in receive handler, value: %s", "2");
+      //APP_LOG(APP_LOG_LEVEL_DEBUG, "in receive handler, value: %s", "2");
 
       app_message_outbox_send();
-      APP_LOG(APP_LOG_LEVEL_DEBUG, "in receive handler, value: %s", "3");
+      //APP_LOG(APP_LOG_LEVEL_DEBUG, "in receive handler, value: %s", "3");
     
     }
     if(tuple->key == 0){
       APP_LOG(APP_LOG_LEVEL_DEBUG, "Received Message: %s", tuple->value->cstring);
-        strcpy(*body_text, *body_text);
-        strcat(*body_text, tuple->value->cstring);
-        strcat(*body_text, " a");
+//        strcpy(*body_text, *body_text);
+      char* extension;
+      extension = (char*) malloc(strlen(body_text)+1+strlen(tuple->value->cstring));
+      strcpy(extension, body_text);
+      free(body_text);
+      strcat(extension, " ");
+      strcat(extension, tuple->value->cstring);
+      //delete body_text;
+      body_text = extension;
+      
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "body_text: %s", body_text);
+      //strcat(*body_text, " a");
 
     }
     //if(tuple->key == 2){
@@ -106,7 +132,50 @@ static void in_received_handler(DictionaryIterator *received, void *context) {
  }
 /////////////////////////
 
-static void getNextWord(char *string[200], char* word[30]){
+static void hard_code(){
+  //int wps = ((125/speed)*60);
+  if(speed == 100){
+  }else if(speed == 95){
+    text_layer_set_text(connection_text, "WPS: 375");
+  }else if(speed == 90){
+    text_layer_set_text(connection_text, "WPS: 300");
+  }else if(speed == 85){
+    text_layer_set_text(connection_text, "WPS: 250");
+  }else if(speed == 80){
+    text_layer_set_text(connection_text, "WPS: 214");
+  }else if(speed == 75){
+    text_layer_set_text(connection_text, "WPS: 187");
+  }else if(speed == 70){
+    text_layer_set_text(connection_text, "WPS: 166");
+  }else if(speed == 65){
+    text_layer_set_text(connection_text, "WPS: 136");
+  }else if(speed == 60){
+    text_layer_set_text(connection_text, "WPS: 125");
+  }else if(speed == 55){
+    text_layer_set_text(connection_text, "WPS: 115");
+  }else if(speed == 50){
+    text_layer_set_text(connection_text, "WPS: 107");
+  }else if(speed == 45){
+    text_layer_set_text(connection_text, "WPS: 100");
+  }else if(speed == 40){
+    text_layer_set_text(connection_text, "WPS: 93");
+  }else if(speed == 35){
+    text_layer_set_text(connection_text, "WPS: 88");
+  }else if(speed == 30){
+    text_layer_set_text(connection_text, "WPS: 83");
+  }else if(speed == 25){
+    text_layer_set_text(connection_text, "WPS: 78");
+  }else if(speed == 20){
+    text_layer_set_text(connection_text, "WPS: 75");
+  }
+  
+  
+}
+
+
+
+
+static void getNextWord(char *string, char* word){
   if(end){
     return;
   }
@@ -115,11 +184,11 @@ static void getNextWord(char *string[200], char* word[30]){
   }
   
     int space_dex = -1;
-    int length = strlen(*string);
+    int length = strlen(string);
     //finds index of next space if it exists, if not return done.
     int current_pos = 0;
     for(int i=0; i<length; i++){
-      if((*string)[i]==' '){
+      if(string[i]==' '){
         current_pos++;
         if(current_pos == space_pos+1){
            space_pos++;
@@ -129,14 +198,14 @@ static void getNextWord(char *string[200], char* word[30]){
         }
       }
     }
-  *word = "";
+  word = "";
   
   
    //APP_LOG(APP_LOG_LEVEL_DEBUG,"outside space_dex = %u",space_dex);
    if(space_dex== -1){ //tere are no spaces so return done.
      int move = 0;
-     while((*string)[head_char]!='\0'){
-       (*word)[move] = (*string)[head_char];
+     while(string[head_char]!=0){
+       word[move] = string[head_char];
        move++;
        head_char++;
      }
@@ -147,22 +216,22 @@ static void getNextWord(char *string[200], char* word[30]){
   
   
   for(int k=0; k<30; k++){
-    (*word)[k] = '\0';
+    word[k] = 0;
   }
   //char * next_word[30];
   //copies the word to next word
   int mov = 0;
   for(int j=head_char+1; j<space_dex; j++){
-      (*word)[mov] = (*string)[j];
+      word[mov] = string[j];
     mov++;
   }
-  APP_LOG(APP_LOG_LEVEL_DEBUG,*word);
+  APP_LOG(APP_LOG_LEVEL_DEBUG,word);
   head_char = space_dex;
   //word = next_word;  
 }
 
 
-static void getPreviousWord(char *string[200], char* word[30]){
+static void getPreviousWord(char *string, char *word){
   if(head_char<=1){
     return;
   }
@@ -172,11 +241,11 @@ static void getPreviousWord(char *string[200], char* word[30]){
   }
   
     int space_dex = -1;
-    int length = strlen(*string);
+    int length = strlen(string);
     //finds index of next space if it exists, if not return done.
     int current_pos = 0;
     for(int i=0; i<length; i++){
-      if((*string)[i]==' '){
+      if(string[i]==' '){
         current_pos++;
         if(current_pos == space_pos-1){
            space_pos--;
@@ -186,7 +255,7 @@ static void getPreviousWord(char *string[200], char* word[30]){
         }
       }
     }
-  *word = "";
+  word = "";
   
   
    //APP_LOG(APP_LOG_LEVEL_DEBUG,"outside space_dex = %u",space_dex);
@@ -195,13 +264,13 @@ static void getPreviousWord(char *string[200], char* word[30]){
    }
 
   for(int k=0; k<30; k++){
-    (*word)[k] = '\0';
+    word[k] = 0;
   }
   //char * next_word[30];
   //copies the word to next word
   int mov = 0;
   for(int j=space_dex; j<head_char+1; j++){
-      (*word)[mov] = (*string)[j];
+      word[mov] = string[j];
        mov++;
   }
   //APP_LOG(APP_LOG_LEVEL_DEBUG,*word);
@@ -210,13 +279,13 @@ static void getPreviousWord(char *string[200], char* word[30]){
 }
 
 
-int getLength(char* word[30]){
+int getLength(char* word){
   if(end){
     return 100;
   }
   int length =0;
   for(int i=0;i<30;i++){
-    if((*word)[i]!='\0'){
+    if(word[i]!=0){
       length++;
     }
   }
@@ -228,7 +297,7 @@ void redraw_text(int type){
   }
   if(hold<0 || type>0){
       GRect move_pos2 = (GRect) { .origin = { text_x, text_y }, .size = { 180, 180 } };
-      char* word[30];
+      char word[30];
       if(type == 0 || type == 2){
         getNextWord(body_text,word);
       }else if(type == 1){
@@ -260,7 +329,7 @@ void redraw_text(int type){
         
         char crop[20] = "";
         for(int i=0; i<shift_x; i++){
-          crop[i] = (*word)[i];
+          crop[i] = word[i];
         }
         
         GSize size = graphics_text_layout_get_content_size(crop,disp_font,move_pos2,GTextOverflowModeTrailingEllipsis,GTextAlignmentCenter);	
@@ -271,9 +340,9 @@ void redraw_text(int type){
       }
       //hold = 10;
       move_pos2 = (GRect) { .origin = { text_x+push_x, text_y }, .size = { 180, 180 } };
-      text_layer_set_text(display_text,*word);
+      text_layer_set_text(display_text,word);
       
-      text_layer_set_text(connection_text,"");
+      //text_layer_set_text(connection_text,*con_text);
       
       layer_set_frame(text_layer_get_layer(display_text),move_pos2);
   }
@@ -288,6 +357,17 @@ static void timer_callback(void *data) {
       redraw_text(1);
     }
   }
+
+  if(con_timer>0){
+    con_timer--;
+    if(con_timer==49){
+      layer_add_child(window_layer, text_layer_get_layer(connection_text));
+    }
+  }else{
+      layer_remove_from_parent(text_layer_get_layer(connection_text));
+  }
+  
+  
   //animation actionEvent
   timer = app_timer_register(ACCEL_STEP_MS, timer_callback, NULL);
 }
@@ -340,10 +420,10 @@ static void change_to_book(){
       text_x =-40;
       text_y = 73;
     }
-  
-   layer_remove_from_parent(text_layer_get_layer(connection_text));
+    con_text = "WPM: 200";  
+   //layer_remove_from_parent(text_layer_get_layer(connection_text));
    //text_layer_set_text(connection_text,"");
-   text_layer_set_text(display_text,"Starting..");
+   text_layer_set_text(display_text,"Starting...");
   
    GRect move_pos2 = (GRect) { .origin = { text_x, text_y }, .size = { 180, 180 } };
    layer_set_frame(text_layer_get_layer(display_text),move_pos2);
@@ -351,7 +431,7 @@ static void change_to_book(){
    GRect move_pos3 = (GRect) { .origin = { -15, 130 }, .size = { 180, 180 } };
    layer_set_frame(text_layer_get_layer(connection_text),move_pos3);
   */
-   text_layer_set_font(connection_text, disp_font);
+  // text_layer_set_font(connection_text, disp_font);
   
    GRect move_pos4 = (GRect) { .origin = { -18, 0 }, .size = { 180, 180 } };
    layer_set_frame(bitmap_layer_get_layer(image_layer),move_pos4);
@@ -380,8 +460,11 @@ void up_click_handler(ClickRecognizerRef recognizer, void *context) {
     if(pause){
       //redraw_text(2);
     }else{
-      if(speed<100){
-      speed+=5;
+      if(speed<95){
+        speed+=5;
+        hard_code();     
+        con_timer = 50;
+       // APP_LOG(APP_LOG_LEVEL_DEBUG,"speed_text = %s",con_text);
       }
     }
   }
@@ -413,6 +496,11 @@ void middle_click_handler(ClickRecognizerRef recognizer, void *context) {
       text_layer_set_font(display_text, disp_font);
   }else if(frame == BOOK){
       pause = !pause;
+      if(pause == true){
+            bitmap_layer_set_bitmap(rewind_layer, pause_icon);
+      }else{
+             bitmap_layer_set_bitmap(rewind_layer, nothing_icon);
+      }
   }
 }
 
@@ -425,10 +513,16 @@ void down_click_handler(ClickRecognizerRef recognizer, void *context) {
         hold = 0;
         redraw_text(1);
         fast_rewind = true;
+       // layer_add_child(window_layer, bitmap_layer_get_layer(rewind_layer));
+         bitmap_layer_set_bitmap(rewind_layer, rewind_icon);
         
     }else{
-      if(speed>5){
-       speed-=5;
+      if(speed>20){
+        speed-=5; 
+        con_timer = 50;
+        hard_code();
+        
+        //APP_LOG(APP_LOG_LEVEL_DEBUG,"speed_text = %s",*con_text);
       }
     }
   }
@@ -438,6 +532,10 @@ void down_click_handler(ClickRecognizerRef recognizer, void *context) {
 void down_up_click_handler(ClickRecognizerRef recognizer, void *context) {
     //nothing as of now
     fast_rewind = false;
+   // layer_remove_from_parent(bitmap_layer_get_layer(rewind_layer));
+  if(pause){
+     bitmap_layer_set_bitmap(rewind_layer, pause_icon);
+  }
 }
 
 
@@ -460,26 +558,38 @@ static void init() {
   display_text = text_layer_create(bounds);
   connection_text = text_layer_create(bounds);
   image_layer = bitmap_layer_create(bounds);
+  rewind_layer = bitmap_layer_create(bounds);
   
   image = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_STELA_ICON);
   font_banner = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_FONT_BANNER);
   game_bg = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_GAME_PANE_BLACK);
+  rewind_icon = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_REWIND);
+  pause_icon = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_PAUSE);
+  nothing_icon = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_NOTHING);
   
   disp_font = fonts_get_system_font(fonts[0]);
   text_layer_set_font(display_text, disp_font);
+  
+  bitmap_layer_set_bitmap(rewind_layer, nothing_icon);
+  bitmap_layer_set_alignment(rewind_layer, GAlignCenter);
+  GRect move_pos2 = (GRect) { .origin = { -20, -60 }, .size = { 180, 180 } };
+  layer_set_frame(bitmap_layer_get_layer(rewind_layer),move_pos2);
   
   change_to_menu();
   
 
   text_layer_set_text_alignment(display_text, GTextAlignmentCenter);
   text_layer_set_text_alignment(connection_text, GTextAlignmentCenter);
+  text_layer_set_overflow_mode(connection_text, GTextOverflowModeWordWrap);
   
   layer_add_child(window_layer, text_layer_get_layer(display_text));
   layer_add_child(window_layer, text_layer_get_layer(connection_text));
   layer_add_child(window_layer, bitmap_layer_get_layer(image_layer));
+  layer_add_child(window_layer, bitmap_layer_get_layer(rewind_layer));
   
-  *body_text = "  color. In modern chewing gum, [1]";
-   app_message_register_inbox_received(in_received_handler); 
+  body_text = " hello world";//" Using Stela, you can read articles from around the web quickly and easily, right on your wrist! Just surf to the article on your phone and hit the Stela button and you can start reading instantly from your Pebble smartwatch. You can read in the shower, and you can even turn your phone off to save that last 5% of your battery. Stela uses a simple, clean, and intuitive interface to show the text one word at a time. Not only does this allow you to read comfortably on such a small screen, but it can even help you to read faster. Words are flashed on the screen one at a time, and they are optically centered on the screen. This allows you to spend less time moving your eyes from word to word (called saccades) and more time reading the content.";
+
+  app_message_register_inbox_received(in_received_handler); 
   app_message_register_inbox_dropped(in_dropped_handler);
   app_message_register_outbox_sent(out_sent_handler);
   app_message_register_outbox_failed(out_failed_handler);
@@ -502,5 +612,4 @@ int main(void) {
   app_event_loop();
   deinit();
 }
-
 

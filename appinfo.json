@@ -1,38 +1,53 @@
 {
-    "versionLabel": "1.0",
-    "uuid": "5bee74a1-b87d-4c62-adcf-8e4eec7a8d69",
     "appKeys": {
-        "moreLetters": 2,
+        "urlstring": 1,
         "message": 0,
-        "urlstring": 1
-    },
-    "longName": "Stela",
-    "versionCode": 1,
-    "capabilities": [
-        ""
-    ],
-    "shortName": "Stela",
-    "companyName": "dsilin17@gmail.com",
-    "watchapp": {
-        "watchface": false
+        "moreLetters": 2
     },
     "resources": {
         "media": [
             {
-                "type": "png",
-                "name": "IMAGE_STELA_ICON",
-                "file": "images/Stela_Icon.png"
+                "name": "IMAGE_NOTHING",
+                "file": "images/nothing.png",
+                "type": "png"
             },
             {
-                "type": "png-trans",
-                "name": "IMAGE_GAME_PANE",
-                "file": "images/game_pane.png"
+                "name": "IMAGE_REWIND",
+                "file": "images/rewind.png",
+                "type": "png"
             },
             {
-                "type": "png",
+                "name": "IMAGE_PAUSE",
+                "file": "images/pause.png",
+                "type": "png"
+            },
+            {
                 "name": "IMAGE_FONT_BANNER",
-                "file": "images/Font_Banner.png"
+                "file": "images/Font_Banner.png",
+                "type": "png"
+            },
+            {
+                "name": "IMAGE_GAME_PANE",
+                "file": "images/game_pane.png",
+                "type": "png-trans"
+            },
+            {
+                "name": "IMAGE_STELA_ICON",
+                "file": "images/Stela_Icon.png",
+                "type": "png"
             }
         ]
-    }
+    },
+    "watchapp": {
+        "watchface": false
+    },
+    "shortName": "Stela",
+    "versionLabel": "1.0",
+    "versionCode": 1,
+    "longName": "Stela",
+    "companyName": "dsilin17@gmail.com",
+    "capabilities": [
+        ""
+    ],
+    "uuid": "5bee74a1-b87d-4c62-adcf-8e4eec7a8d69"
 }

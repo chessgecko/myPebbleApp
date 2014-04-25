@@ -7,17 +7,17 @@ function sendMessage(msg) {
   Pebble.sendAppMessage({"0": msg});
 }*/
 
-//function sendURL(url) {
-//  console.log(url);
-//  Pebble.sendAppMessage({"1": url});
-//}
+function sendURL(url) {
+  console.log(url);
+  Pebble.sendAppMessage({"1": url});
+}
 
 function sendEnd(){
   Pebble.sendAppMessage({2:"s"});
 }
 
 function sendWord (idx) {
-  if (idx < words.length && idx < 10) {
+  if (idx < words.length) {
     console.log("words[pos]: " + words[idx]);
     Pebble.sendAppMessage({0: words[idx]},
                            function () {
@@ -136,7 +136,7 @@ function getText(address){
 // Called when JS is ready
 Pebble.addEventListener("ready",
   function(e) {
-    //sendURL("http://www.gizoogle.net");
+    sendURL("https://en.wikipedia.org/wiki/David_Nutt");
     //getLocation(); 
     //getText("http://www.gizoogle.net");
   });
